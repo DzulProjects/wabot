@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WABOT Sender - Broadcast Messages</title>
+    <link rel="stylesheet" href="css/sender.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background -->
+    <div class="background">
+        <div class="stars"></div>
+        <div class="floating-particles"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html" class="logo-link">
+                    <span class="logo-text">WABOT</span>
+                    <div class="logo-glow"></div>
+                </a>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="chatbot.html" class="nav-link">Chatbot</a>
+                <a href="#" class="nav-link active">Sender</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Header -->
+            <header class="page-header">
+                <div class="header-content">
+                    <h1 class="page-title">
+                        <span class="gradient-text">Message</span> Broadcaster
+                    </h1>
+                    <p class="page-description">
+                        Send instant WhatsApp messages to any Malaysian number. 
+                        Perfect for notifications, updates, and direct communication.
+                    </p>
+                    <div class="status-indicator">
+                        <div class="status-dot online"></div>
+                        <span>Connected to +60 10-771 8082</span>
+                    </div>
+                </div>
+                <div class="header-visual">
+                    <div class="message-preview">
+                        <div class="phone-mockup">
+                            <div class="phone-screen">
+                                <div class="whatsapp-header">
+                                    <span class="contact-name">WABOT</span>
+                                    <div class="online-status">online</div>
+                                </div>
+                                <div class="message-bubble" id="previewBubble">
+                                    <div class="message-content">Your message will appear here...</div>
+                                    <div class="message-time">Now</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Sender Form -->
+            <section class="sender-section">
+                <div class="form-container">
+                    <form id="senderForm" class="sender-form">
+                        <!-- Phone Number Input -->
+                        <div class="form-group">
+                            <label for="phoneNumber" class="form-label">
+                                <span class="label-text">Recipient Number</span>
+                                <span class="label-required">*</span>
+                            </label>
+                            <div class="phone-input-container">
+                                <div class="country-prefix">🇲🇾 +60</div>
+                                <input 
+                                    type="tel" 
+                                    id="phoneNumber" 
+                                    class="form-input phone-input"
+                                    placeholder="10-771 8082"
+                                    maxlength="13"
+                                    required
+                                >
+                            </div>
+                            <div class="input-hint">Malaysian mobile numbers (9-11 digits, e.g., 10-771 8082)</div>
+                        </div>
+
+                        <!-- Message Input -->
+                        <div class="form-group">
+                            <label for="messageText" class="form-label">
+                                <span class="label-text">Message</span>
+                                <span class="label-required">*</span>
+                                <span class="char-counter">
+                                    <span id="charCount">0</span>/1000
+                                </span>
+                            </label>
+                            <textarea 
+                                id="messageText" 
+                                class="form-input message-textarea"
+                                placeholder="Type your message here..."
+                                maxlength="1000"
+                                rows="6"
+                                required
+                            ></textarea>
+                            <div class="input-hint">Pro tip: Use emojis to make your messages more engaging!</div>
+                        </div>
+
+                        <!-- Emoji Selector -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-text">Quick Emojis</span>
+                            </label>
+                            <div class="emoji-container">
+                                <div class="emoji-search">
+                                    <input 
+                                        type="text" 
+                                        id="emojiSearch" 
+                                        placeholder="Search emojis..."
+                                        class="emoji-search-input"
+                                    >
+                                </div>
+                                <div class="emoji-grid" id="emojiGrid">
+                                    <!-- Emojis will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Templates -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <span class="label-text">Quick Templates</span>
+                            </label>
+                            <div class="template-grid">
+                                <button type="button" class="template-btn" data-template="greeting">
+                                    👋 Greeting
+                                </button>
+                                <button type="button" class="template-btn" data-template="reminder">
+                                    ⏰ Reminder
+                                </button>
+                                <button type="button" class="template-btn" data-template="announcement">
+                                    📢 Announcement
+                                </button>
+                                <button type="button" class="template-btn" data-template="thank-you">
+                                    🙏 Thank You
+                                </button>
+                                <button type="button" class="template-btn" data-template="follow-up">
+                                    📞 Follow-up
+                                </button>
+                                <button type="button" class="template-btn" data-template="invitation">
+                                    🎉 Invitation
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Send Button -->
+                        <div class="form-actions">
+                            <button type="submit" class="send-button" id="sendButton">
+                                <div class="button-content">
+                                    <span class="button-icon">📱</span>
+                                    <span class="button-text">Send Message</span>
+                                    <div class="button-glow"></div>
+                                </div>
+                                <div class="loading-spinner" style="display: none;">
+                                    <div class="spinner"></div>
+                                </div>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Send History -->
+                <div class="history-container">
+                    <div class="history-header">
+                        <h3 class="history-title">
+                            <span class="history-icon">📜</span>
+                            Recent Messages
+                        </h3>
+                        <button class="clear-history-btn" id="clearHistory">Clear All</button>
+                    </div>
+                    <div class="history-list" id="historyList">
+                        <div class="history-empty">
+                            <div class="empty-icon">📭</div>
+                            <p>No messages sent yet</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="js/sender.js"></script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+{
+  "name": "wabot-fixed",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wabot-incoming",
+        "options": {}
+      },
+      "id": "2dade057-f5a8-4e88-871e-1cc69598b036",
+      "name": "WhatsApp Message Received",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -656,
+        112
+      ],
+      "webhookId": "1d65dd6a-3ffd-411f-b730-08c0739ef168"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.body.source}}",
+              "operation": "equal",
+              "value2": "ai-chatbot"
+            }
+          ]
+        }
+      },
+      "id": "906c93a2-d96c-4ce5-a90e-295b179903bf",
+      "name": "Check if from AI Chatbot",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.whatsapp.com/send-message",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "to",
+              "value": "={{$json.body.to}}"
+            },
+            {
+              "name": "message",
+              "value": "={{$json.body.message}}"
+            }
+          ]
+        },
+        "options": {
+          "headers": {
+            "entries": [
+              {
+                "name": "Authorization",
+                "value": "Bearer YOUR_WHATSAPP_TOKEN"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "efff1370-da57-4db0-a509-8cf1d009037d",
+      "name": "Send to WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -208,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3000/webhook/message",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{$json.body.Body || $json.body.text}}"
+            },
+            {
+              "name": "from",
+              "value": "={{$json.body.From || $json.body.from}}"
+            },
+            {
+              "name": "to",
+              "value": "={{$json.body.To || $json.body.to}}"
+            },
+            {
+              "name": "messageId",
+              "value": "={{$json.body.MessageSid || $json.body.id}}"
+            }
+          ]
+        },
+        "options": {
+          "headers": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "b66920ce-5bd0-4e76-92ea-725c1cd60585",
+      "name": "Forward to AI Chatbot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        -208,
+        208
+      ]
+    }
+  ],
+  "connections": {
+    "WhatsApp Message Received": {
+      "main": [
+        [
+          {
+            "node": "Check if from AI Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if from AI Chatbot": {
+      "main": [
+        [
+          {
+            "node": "Send to WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Forward to AI Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

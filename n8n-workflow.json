@@ -1,0 +1,167 @@
+{
+  "name": "WhatsApp AI Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-incoming",
+        "options": {}
+      },
+      "id": "webhook-whatsapp-incoming",
+      "name": "WhatsApp Message Received",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.CHATBOT_URL}}/webhook/message",
+        "options": {
+          "headers": {
+            "Content-Type": "application/json"
+          }
+        },
+        "body": {
+          "message": "={{$json.body.message || $json.message}}",
+          "from": "={{$json.body.from || $json.from}}",
+          "to": "={{$json.body.to || $json.to}}",
+          "messageId": "={{$json.body.messageId || $json.id}}"
+        }
+      },
+      "id": "send-to-ai-chatbot",
+      "name": "Send to AI Chatbot",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.success}}",
+              "operation": "equal",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "check-ai-response",
+      "name": "Check AI Response",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-whatsapp",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-send-whatsapp",
+      "name": "Send WhatsApp Response",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.WHATSAPP_API_URL}}/send-message",
+        "options": {
+          "headers": {
+            "Authorization": "Bearer ={{$env.WHATSAPP_API_TOKEN}}",
+            "Content-Type": "application/json"
+          }
+        },
+        "body": {
+          "to": "={{$json.to}}",
+          "message": "={{$json.message}}",
+          "type": "text"
+        }
+      },
+      "id": "send-to-whatsapp",
+      "name": "Send to WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.WHATSAPP_API_URL}}/send-message",
+        "options": {
+          "headers": {
+            "Authorization": "Bearer ={{$env.WHATSAPP_API_TOKEN}}",
+            "Content-Type": "application/json"
+          }
+        },
+        "body": {
+          "to": "={{$('WhatsApp Message Received').item.json.from}}",
+          "message": "Sorry, I'm having technical difficulties. Please try again later.",
+          "type": "text"
+        }
+      },
+      "id": "send-error-message",
+      "name": "Send Error Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [900, 400]
+    }
+  ],
+  "connections": {
+    "WhatsApp Message Received": {
+      "main": [
+        [
+          {
+            "node": "Send to AI Chatbot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to AI Chatbot": {
+      "main": [
+        [
+          {
+            "node": "Check AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check AI Response": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Error Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Response": {
+      "main": [
+        [
+          {
+            "node": "Send to WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1"
+}
