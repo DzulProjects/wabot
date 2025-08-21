@@ -24,12 +24,12 @@ RUN mkdir -p /app/logs && \
 # Switch to non-root user
 USER wabot
 
-# Expose port
-EXPOSE 3000
+# Expose port (use dynamic PORT from environment)
+EXPOSE ${PORT:-3000}
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node healthcheck.js
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD node healthcheck.js || exit 1
 
 # Start application
 CMD ["node", "server.js"]
