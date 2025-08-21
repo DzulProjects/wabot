@@ -77,6 +77,21 @@
             background: rgba(0, 255, 255, 0.1);
         }
         
+        @media (max-width: 768px) {
+            .nav-container {
+                padding: 0 1rem;
+            }
+            
+            .nav-menu {
+                gap: 1rem;
+            }
+            
+            .nav-link {
+                padding: 0.3rem 0.6rem;
+                font-size: 0.9rem;
+            }
+        }
+        
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -315,8 +330,9 @@
             </div>
             <div class="nav-menu">
                 <a href="index.html" class="nav-link">Home</a>
-                <a href="#" class="nav-link active">Chatbot</a>
-                <a href="sender.html" class="nav-link">Sender</a>
+                <a href="chatbot.html" class="nav-link active">AI Chatbot</a>
+                <a href="sender.html" class="nav-link">WA Sender</a>
+                <a href="kwap-inquiry.html" class="nav-link">KWAP Inquiry</a>
             </div>
         </div>
     </nav>

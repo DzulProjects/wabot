@@ -121,11 +121,15 @@ body {
     font-weight: 500;
     position: relative;
     transition: all 0.3s ease;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
 }
 
-.nav-link:hover {
+.nav-link:hover,
+.nav-link.active {
     color: #00ffff;
     text-shadow: 0 0 10px #00ffff;
+    background: rgba(0, 255, 255, 0.1);
 }
 
 .nav-link::after {
@@ -139,7 +143,8 @@ body {
     transition: width 0.3s ease;
 }
 
-.nav-link:hover::after {
+.nav-link:hover::after,
+.nav-link.active::after {
     width: 100%;
 }
 

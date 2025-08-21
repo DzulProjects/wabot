@@ -1,16 +1,32 @@
-# WABOT - AI-Powered WhatsApp Bot Platform
+# 🤖 WABOT - AI-Powered WhatsApp Bot Platform
 
-A modern, futuristic AI-powered chatbot platform with WhatsApp integration, featuring Gemini AI and a sleek glassmorphism UI.
+A comprehensive, futuristic AI-powered chatbot platform featuring three powerful modules: **AI Chatbot**, **WhatsApp Sender**, and **KWAP Pension Inquiry**. Built with cutting-edge technology and a sleek glassmorphism UI.
 
-## ✨ Features
+## 🌟 Platform Overview
+
+WABOT provides a unified interface for three essential WhatsApp automation and communication tools:
+
+### 🎯 **Three Main Modules:**
+1. **[AI Chatbot](#-ai-chatbot)** - Intelligent conversational AI with n8n integration
+2. **[WA Sender](#-wa-sender--message-broadcaster)** - Professional WhatsApp message broadcasting
+3. **[KWAP Inquiry](#-kwap-pension-inquiry-system)** - Malaysian pension records lookup system
+
+### 🌐 **Access Your Platform:**
+- **🏠 Main Dashboard**: `http://localhost:3000/` 
+- **🤖 AI Chatbot**: `http://localhost:3000/chatbot.html`
+- **📱 WA Sender**: `http://localhost:3000/sender.html`
+- **🏛️ KWAP Inquiry**: `http://localhost:3000/kwap-inquiry.html`
+
+## ✨ Core Features
 
 - 🧠 **AI-Powered**: Supports OpenAI GPT and Google Gemini
 - 📱 **WhatsApp Ready**: Built for WhatsApp integration via n8n
 - 💾 **Conversation Memory**: Remembers chat history per user
 - 🔄 **Fallback System**: Works even without AI API keys
 - 🏛️ **KWAP Integration**: Malaysian pension inquiry system with SOAP API
+- 📡 **Message Broadcasting**: Send targeted WhatsApp messages instantly
 - 🚀 **Deployment Ready**: Configured for Coolify/Docker deployment
-- 🎯 **Simple Setup**: Multiple modules with unified interface
+- 🎯 **Unified Interface**: Three powerful modules in one platform
 
 ## 🏗️ Architecture
 
@@ -158,6 +174,130 @@ GEMINI_API_KEY=your-gemini-key
 
 ### No AI (Fallback)
 If no AI keys are provided, the bot uses simple rule-based responses for basic interactions.
+
+## 🤖 AI Chatbot
+
+Intelligent conversational AI system with WhatsApp integration via n8n workflows, featuring advanced memory management and multi-AI provider support.
+
+### ✨ Features
+
+- **🧠 Multi-AI Support**: OpenAI GPT and Google Gemini integration
+- **💾 Conversation Memory**: Maintains context across chat sessions
+- **🔗 n8n Integration**: Seamless WhatsApp workflow automation
+- **📱 Real-time Testing**: Built-in web interface for testing
+- **🔄 Fallback System**: Continues working without AI API keys
+- **📊 Conversation History**: Retrieve and manage chat histories
+- **⚡ Streaming Responses**: Real-time AI response streaming
+- **🎯 Context Awareness**: Remembers up to 50 messages per user
+
+### 🚀 Features Overview
+
+- **Smart Responses**: Context-aware AI conversations
+- **Phone Integration**: Link conversations to phone numbers
+- **Memory Management**: Automatic conversation cleanup
+- **API Endpoints**: RESTful API for integration
+- **Health Monitoring**: Built-in health check system
+- **Debug Interface**: Web-based testing and debugging
+- **Webhook Support**: n8n and WhatsApp webhook integration
+
+### 📋 Usage
+
+1. **Web Interface**: Visit `http://localhost:3000/chatbot.html`
+2. **Enter Phone**: Provide a phone number for conversation tracking
+3. **Start Chatting**: Send messages and receive AI responses
+4. **View History**: Access previous conversations via API
+5. **Monitor Health**: Check system status and connectivity
+
+### 🔧 API Integration
+
+**Main Webhook:**
+```bash
+POST /webhook/message
+```
+
+**Get Conversation:**
+```bash
+GET /api/conversation/:phoneNumber
+```
+
+**Send Direct Message:**
+```bash
+POST /api/send
+```
+
+**Health Check:**
+```bash
+GET /health
+```
+
+### 🎯 Use Cases
+
+- **Customer Support**: Automated first-line customer service
+- **Lead Qualification**: Intelligent lead capture and screening
+- **FAQ Automation**: Answer common questions automatically
+- **Appointment Booking**: Schedule and manage appointments
+- **Order Support**: Handle order status and tracking queries
+- **Product Recommendations**: Suggest relevant products/services
+
+## 📱 WA Sender - Message Broadcaster
+
+Professional WhatsApp message broadcasting system with advanced features for targeted communication, marketing campaigns, and customer engagement.
+
+### ✨ Features
+
+- **🎯 Targeted Messaging**: Send messages to specific Malaysian phone numbers
+- **😀 Rich Content**: Full emoji support and text formatting
+- **⚡ Instant Delivery**: Real-time message broadcasting
+- **📝 Message Templates**: Pre-built templates for common scenarios
+- **📜 Send History**: Track and manage sent messages
+- **🇲🇾 Malaysian Focus**: Optimized for Malaysian mobile numbers
+- **🎨 Modern Interface**: Intuitive glassmorphism UI with live preview
+
+### 🚀 Features Overview
+
+- **Phone Validation**: Automatic Malaysian number format validation
+- **Live Preview**: See how your message appears on WhatsApp
+- **Character Counter**: 1000 character limit with live counting
+- **Quick Templates**: Greeting, reminder, announcement, thank you, follow-up, invitation
+- **Emoji Picker**: Searchable emoji selection tool
+- **Message History**: Local storage of recent messages
+- **Responsive Design**: Works on desktop and mobile devices
+
+### 📋 Usage
+
+1. **Access Interface**: Visit `http://localhost:3000/sender.html`
+2. **Enter Recipient**: Malaysian mobile number (auto +60 prefix)
+3. **Compose Message**: Type your message with emoji support
+4. **Use Templates**: Quick templates for common messages
+5. **Send**: Instant delivery via WhatsApp API
+6. **Track History**: View and manage sent messages
+
+### 🔧 Configuration
+
+```env
+# WhatsApp API Configuration (if using direct API)
+WHATSAPP_API_URL=https://your-whatsapp-api.com
+WHATSAPP_API_TOKEN=your-api-token
+```
+
+### 📨 Message Templates
+
+**Available Templates:**
+- 👋 **Greeting**: Welcome and introduction messages
+- ⏰ **Reminder**: Appointment and deadline reminders  
+- 📢 **Announcement**: Important updates and news
+- 🙏 **Thank You**: Appreciation and gratitude messages
+- 📞 **Follow-up**: Customer service follow-ups
+- 🎉 **Invitation**: Event and meeting invitations
+
+### 🎯 Use Cases
+
+- **Marketing Campaigns**: Targeted promotional messages
+- **Customer Service**: Support and follow-up communications
+- **Event Management**: Invitations and reminders
+- **Business Updates**: Company announcements and news
+- **Appointment Management**: Booking confirmations and reminders
+- **Sales Outreach**: Lead nurturing and conversion
 
 ## 🏛️ KWAP Pension Inquiry System
 
