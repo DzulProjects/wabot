@@ -21,9 +21,6 @@ COPY . .
 RUN mkdir -p /app/logs && \
     chown -R wabot:nodejs /app
 
-# Fix localhost resolution to IPv4
-RUN echo '127.0.0.1 localhost' >> /etc/hosts
-
 # Switch to non-root user
 USER wabot
 
