@@ -20,6 +20,8 @@ services:
     volumes:
       # Mount logs directory for debugging (optional)
       - ./logs:/app/logs
+    extra_hosts:
+      - "localhost:127.0.0.1"
     networks:
       - wabot-network
 
