@@ -9,6 +9,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
+// Trust proxy for rate limiting (when behind reverse proxy/load balancer)
+if (NODE_ENV === 'production' || process.env.TRUST_PROXY) {
+    app.set('trust proxy', 1); // Trust first proxy
+}
+
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
