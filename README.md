@@ -8,8 +8,9 @@ A modern, futuristic AI-powered chatbot platform with WhatsApp integration, feat
 - 📱 **WhatsApp Ready**: Built for WhatsApp integration via n8n
 - 💾 **Conversation Memory**: Remembers chat history per user
 - 🔄 **Fallback System**: Works even without AI API keys
+- 🏛️ **KWAP Integration**: Malaysian pension inquiry system with SOAP API
 - 🚀 **Deployment Ready**: Configured for Coolify/Docker deployment
-- 🎯 **Simple Setup**: Just 4 dependencies, minimal configuration
+- 🎯 **Simple Setup**: Multiple modules with unified interface
 
 ## 🏗️ Architecture
 
@@ -117,6 +118,31 @@ Get conversation history for a phone number
 ### `POST /api/send`
 Send message directly to n8n webhook
 
+### `POST /api/kwap/inquiry`
+KWAP Pension Inquiry endpoint
+```json
+{
+  "nokp": "440725085195"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "pensionerInfo": {
+    "name": "LAU CHAI AUN @ LOU CHAN DUN",
+    "currentIdNo": "440725085195",
+    "birthDate": "19440725",
+    "serviceTypeDesc": "Perkhidmatan Awam Negeri",
+    "deptName": "JABATAN KERJA RAYA, PERAK",
+    "pensionAccNo": "00305732",
+    "dependents": [...]
+  },
+  "timestamp": "2025-08-21T03:30:00Z"
+}
+```
+
 ## 🤖 AI Configuration
 
 ### OpenAI (Recommended)
@@ -132,6 +158,75 @@ GEMINI_API_KEY=your-gemini-key
 
 ### No AI (Fallback)
 If no AI keys are provided, the bot uses simple rule-based responses for basic interactions.
+
+## 🏛️ KWAP Pension Inquiry System
+
+Integrated Malaysian pension inquiry system that connects directly to KWAP (Kumpulan Wang Persaraan) databases for real-time pension information retrieval.
+
+### 🚀 Features
+
+- **🔍 IC Number Lookup**: Query using 12-digit Malaysian Identity Card numbers
+- **📄 Comprehensive Data**: Personal info, service history, pension details
+- **👨‍👩‍👧‍👦 Dependent Information**: Family members and beneficiaries
+- **⚡ Real-time**: Direct SOAP API integration with KWAP servers
+- **🎨 Modern UI**: Futuristic glassmorphism interface
+- **📱 Responsive**: Works on desktop and mobile devices
+
+### 🔧 Configuration
+
+```env
+# KWAP Configuration
+KWAP_API_KEY=your_kwap_api_key_here
+KWAP_API_URL=https://apim.kwap.my/ws/PortalServiceInquireEmass/1.0
+```
+
+### 📋 Usage
+
+1. **Web Interface**: Visit `http://localhost:3000/kwap-inquiry.html`
+2. **API Direct**: POST to `/api/kwap/inquiry` with `{"nokp": "123456789012"}`
+3. **Integration**: Embed in your own applications via REST API
+
+### 📨 Data Retrieved
+
+**Personal Information:**
+- Full name, IC numbers (current/old)
+- Birth date, gender, race, religion
+- Death status and dates
+- Contact information and address
+
+**Service Information:**
+- Government department and service type
+- First appointment and retirement dates
+- Last designation and salary information
+- Total service period
+
+**Pension Details:**
+- Pension account numbers
+- Payment start/stop dates
+- Current payment method and status
+- File numbers and references
+
+**Dependent Information:**
+- Spouse and children details
+- Relationship types and descriptions
+- Marriage, divorce, and adoption dates
+- Dependent pension account information
+
+### 🔒 Security & Compliance
+
+- **Rate Limited**: Prevents API abuse
+- **Input Validation**: Sanitizes and validates IC numbers
+- **Error Handling**: Graceful error responses
+- **Logging**: Comprehensive audit trail
+- **HTTPS Only**: Secure data transmission
+
+### 🛠️ Technical Details
+
+- **Protocol**: SOAP 1.1 with XML parsing
+- **Authentication**: API key-based authorization
+- **Timeout**: 30-second request timeout
+- **Format**: 12-digit Malaysian IC numbers (e.g., 440725085195)
+- **Response**: Structured JSON with comprehensive pensioner data
 
 ## 🔄 How It Works
 

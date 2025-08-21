@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KWAP Pension Inquiry - AI-Powered System</title>
+    <link rel="stylesheet" href="css/kwap-inquiry.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="background">
+        <div class="stars"></div>
+        <div class="floating-particles"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html" style="text-decoration: none;">
+                    <span class="logo-text">KWAP Portal</span>
+                </a>
+                <div class="logo-glow"></div>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="chatbot.html" class="nav-link">AI Chatbot</a>
+                <a href="sender.html" class="nav-link">Sender</a>
+                <a href="#" class="nav-link" style="color: #00ffff;">KWAP Inquiry</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Page Title -->
+        <div class="page-title">
+            <h1>
+                <span class="gradient-text">KWAP</span><br>
+                Pension Inquiry System
+            </h1>
+            <p class="page-description">
+                Access comprehensive pension information using your Malaysian Identity Card number. 
+                Our AI-powered system provides instant access to KWAP pension records, service history, and dependent details.
+            </p>
+        </div>
+
+        <!-- KWAP Form -->
+        <div class="kwap-form-container">
+            <div class="form-card">
+                <form id="kwap-form">
+                    <div class="form-group">
+                        <label for="nokp" class="form-label">
+                            🆔 Identity Card Number (NOKP)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="nokp" 
+                            name="nokp" 
+                            class="form-input"
+                            placeholder="Enter your 12-digit IC number (e.g., 440725085195)"
+                            maxlength="12"
+                            pattern="[0-9]{12}"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="submit-button" id="submit-btn">
+                        <span class="loading-spinner" id="loading-spinner"></span>
+                        <span id="button-text">🚀 Inquiry Pension Details</span>
+                    </button>
+                </form>
+
+                <!-- Messages -->
+                <div id="error-message" class="error-message"></div>
+                <div id="success-message" class="success-message"></div>
+            </div>
+        </div>
+
+        <!-- Results Container -->
+        <div id="results-container" class="results-container">
+            <!-- Personal Information -->
+            <div class="results-card">
+                <h2 class="results-title">👤 Personal Information</h2>
+                <div id="personal-info" class="info-grid">
+                    <!-- Dynamic content will be populated here -->
+                </div>
+            </div>
+
+            <!-- Service Information -->
+            <div class="results-card">
+                <h2 class="results-title">🏢 Service Information</h2>
+                <div id="service-info" class="info-grid">
+                    <!-- Dynamic content will be populated here -->
+                </div>
+            </div>
+
+            <!-- Pension Details -->
+            <div class="results-card">
+                <h2 class="results-title">💰 Pension Details</h2>
+                <div id="pension-info" class="info-grid">
+                    <!-- Dynamic content will be populated here -->
+                </div>
+            </div>
+
+            <!-- Dependent Information -->
+            <div id="dependents-container" class="results-card">
+                <h2 class="results-title">👨‍👩‍👧‍👦 Dependent Information</h2>
+                <div id="dependents-list" class="dependents-section">
+                    <!-- Dynamic dependent cards will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 2rem; color: #666; margin-top: 4rem;">
+        <p>🔒 Secure KWAP Pension Inquiry System | Powered by Advanced AI Technology</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">
+            This system connects to official KWAP databases for accurate pension information retrieval.
+        </p>
+    </footer>
+
+    <script src="js/kwap-inquiry.js"></script>
+</body>
+</html>

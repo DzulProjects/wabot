@@ -174,6 +174,50 @@ app.post('/api/send', async (req, res) => {
     }
 });
 
+// KWAP Pension Inquiry API endpoint
+app.post('/api/kwap/inquiry', async (req, res) => {
+    try {
+        console.log('📋 KWAP inquiry request:', req.body);
+        
+        const { nokp } = req.body;
+        
+        if (!nokp) {
+            return res.status(400).json({ 
+                error: 'Missing required field: nokp (IC number)' 
+            });
+        }
+        
+        // Validate nokp format
+        if (!/^\d{12}$/.test(nokp)) {
+            return res.status(400).json({ 
+                error: 'Invalid IC number format. Must be 12 digits.' 
+            });
+        }
+        
+        // Make SOAP request to KWAP API
+        const pensionInfo = await getKWAPPensionInfo(nokp);
+        
+        if (!pensionInfo) {
+            return res.status(404).json({ 
+                error: 'No pension information found for this IC number' 
+            });
+        }
+        
+        res.json({
+            success: true,
+            pensionerInfo: pensionInfo,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ KWAP inquiry error:', error);
+        res.status(500).json({ 
+            error: 'Failed to retrieve pension information',
+            details: error.message 
+        });
+    }
+});
+
 // Get conversation history
 app.get('/api/conversation/:phoneNumber', (req, res) => {
     const { phoneNumber } = req.params;
@@ -315,6 +359,141 @@ I'm a simple AI assistant. Try asking me about:
 • Help or support
 
 Or just say "hi" to start a conversation! 😊`;
+}
+
+// KWAP Pension Information Function
+async function getKWAPPensionInfo(nokp) {
+    const kwapApiKey = process.env.KWAP_API_KEY || 'b3551b34-68b1-4717-b290-0a26ac7f7bbc';
+    const kwapApiUrl = process.env.KWAP_API_URL || 'https://apim.kwap.my/ws/PortalServiceInquireEmass/1.0';
+    
+    console.log('🏛️ Making KWAP API request for nokp:', nokp);
+    
+    try {
+        // Create SOAP request
+        const soapEnvelope = `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tem="http://tempuri.org/">
+   <soap:Header/>
+   <soap:Body>
+      <tem:InquireEmass>
+         <tem:nokp>${nokp}</tem:nokp>
+      </tem:InquireEmass>
+   </soap:Body>
+</soap:Envelope>`;
+        
+        // Make SOAP request
+        const response = await axios.post(`${kwapApiUrl}?apikey=${kwapApiKey}`, soapEnvelope, {
+            headers: {
+                'Content-Type': 'text/xml; charset=utf-8',
+                'SOAPAction': 'http://tempuri.org/InquireEmass'
+            },
+            timeout: 30000
+        });
+        
+        console.log('✅ KWAP API Response received');
+        
+        // Parse XML response
+        const parsedData = parseKWAPResponse(response.data);
+        
+        return parsedData;
+        
+    } catch (error) {
+        console.error('❌ KWAP API Error:', error.response?.data || error.message);
+        throw new Error(error.response?.data?.message || error.message || 'Failed to retrieve pension information');
+    }
+}
+
+// Parse KWAP SOAP XML Response
+function parseKWAPResponse(xmlData) {
+    try {
+        // Simple XML parsing - extract data between tags
+        const extractValue = (xml, tagName) => {
+            const regex = new RegExp(`<${tagName}>(.*?)</${tagName}>`, 'i');
+            const match = xml.match(regex);
+            return match ? match[1].trim() : null;
+        };
+        
+        const extractAllValues = (xml, tagName) => {
+            const regex = new RegExp(`<${tagName}>(.*?)</${tagName}>`, 'gi');
+            const matches = xml.match(regex);
+            return matches ? matches.map(match => {
+                const valueMatch = match.match(new RegExp(`<${tagName}>(.*?)</${tagName}>`, 'i'));
+                return valueMatch ? valueMatch[1].trim() : null;
+            }) : [];
+        };
+        
+        // Check if response contains data
+        if (!xmlData.includes('<InquireEmassResult>') || xmlData.includes('<InquireEmassResult/>')) {
+            return null; // No data found
+        }
+        
+        // Extract main pensioner information
+        const pensionerInfo = {
+            // Personal Information
+            name: extractValue(xmlData, 'Name'),
+            currentIdNo: extractValue(xmlData, 'CurrentIdNo'),
+            oldIdNo: extractValue(xmlData, 'OldIdNo'),
+            birthDate: extractValue(xmlData, 'BirthDate'),
+            gender: extractValue(xmlData, 'Gender'),
+            raceCode: extractValue(xmlData, 'RaceCode'),
+            religionCode: extractValue(xmlData, 'ReligionCode'),
+            deathSts: extractValue(xmlData, 'DeathSts'),
+            deseaseDate: extractValue(xmlData, 'DeseaseDate'),
+            
+            // Service Information
+            serviceTypeDesc: extractValue(xmlData, 'ServiceTypeDesc'),
+            deptName: extractValue(xmlData, 'DeptName'),
+            deptDesc: extractValue(xmlData, 'DeptDesc'),
+            firstAppointDate: extractValue(xmlData, 'FirstAppointDate'),
+            lastDesignation: extractValue(xmlData, 'LastDesignation'),
+            lastSalary: extractValue(xmlData, 'LastSalary'),
+            tpTotal: extractValue(xmlData, 'TpTotal'),
+            
+            // Pension Information
+            pensionAccNo: extractValue(xmlData, 'PensionAccNo'),
+            fileNo: extractValue(xmlData, 'FileNo'),
+            pensionDate: extractValue(xmlData, 'PensionDate'),
+            paymentStartDate: extractValue(xmlData, 'PaymentStartDate'),
+            paymentStopDate: extractValue(xmlData, 'PaymentStopDate'),
+            currentPaymentMethod: extractValue(xmlData, 'CurrentPaymentMethod'),
+            recordSts: extractValue(xmlData, 'RecordSts'),
+            retireTypeDesc: extractValue(xmlData, 'RetireTypeDesc'),
+            pensionerType: extractValue(xmlData, 'PensionerType'),
+            managingDeptCode: extractValue(xmlData, 'ManagingDeptCode')
+        };
+        
+        // Extract dependent information
+        const dependents = [];
+        const dependentNames = extractAllValues(xmlData, 'DependantName');
+        const dependentICs = extractAllValues(xmlData, 'DependantCurrentIdNo');
+        const dependentGenders = extractAllValues(xmlData, 'DependantGender');
+        const dependentRelationships = extractAllValues(xmlData, 'RelationShipDesc');
+        const dependentBirthDates = extractAllValues(xmlData, 'DependantBirthDate');
+        const dependentMarriageDates = extractAllValues(xmlData, 'MarriageDate');
+        const dependentPensionAccNos = extractAllValues(xmlData, 'DependantPensionAccNo');
+        
+        for (let i = 0; i < dependentNames.length; i++) {
+            if (dependentNames[i] && dependentNames[i] !== '') {
+                dependents.push({
+                    name: dependentNames[i],
+                    currentIdNo: dependentICs[i] || null,
+                    gender: dependentGenders[i] || null,
+                    relationShipDesc: dependentRelationships[i] || null,
+                    birthDate: dependentBirthDates[i] || null,
+                    marriageDate: dependentMarriageDates[i] || null,
+                    pensionAccNo: dependentPensionAccNos[i] || null
+                });
+            }
+        }
+        
+        pensionerInfo.dependents = dependents;
+        
+        console.log('📋 Parsed pensioner info for:', pensionerInfo.name);
+        return pensionerInfo;
+        
+    } catch (error) {
+        console.error('❌ XML parsing error:', error);
+        throw new Error('Failed to parse pension information');
+    }
 }
 
 // Send response back to n8n
