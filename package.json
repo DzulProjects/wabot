@@ -10,7 +10,15 @@
     "docker:build": "docker build -t wabot .",
     "docker:run": "docker run -p 3000:3000 --env-file .env wabot",
     "docker:compose": "docker-compose up --build",
-    "health": "node healthcheck.js"
+    "health": "node healthcheck.js",
+    "db:seed": "node seed_data.js",
+    "db:init": "echo 'Please ensure MySQL is running and database wabot_ai exists, then run: npm run db:seed'",
+    "db:backup": "mysqldump -h ${DB_HOST:-localhost} -u ${DB_USER:-root} -p${DB_PASSWORD} ${DB_NAME:-wabot_ai} > backup_$(date +%Y%m%d_%H%M%S).sql",
+    "test:enhanced": "NODE_ENV=development node -e \"console.log('Testing enhanced AI with database...'); require('./server.js');\"",
+    "prod:init": "node init_production_db.js",
+    "prod:health": "node init_production_db.js health",
+    "prod:test": "NODE_ENV=production node -e \"console.log('Testing production setup...'); setTimeout(() => process.exit(0), 5000); require('./server.js');\"",
+    "coolify:deploy": "echo 'Deploy to Coolify: Push to main branch and configure environment variables'"
   },
   "engines": {
     "node": ">=18.0.0",
@@ -29,9 +37,10 @@
   "dependencies": {
     "axios": "^1.6.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.6.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.5.1",
-    "helmet": "^7.2.0"
+    "helmet": "^7.2.0",
+    "mysql2": "^3.15.2"
   }
 }

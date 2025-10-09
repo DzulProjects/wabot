@@ -5,6 +5,10 @@ const axios = require('axios');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 
+// Import enhanced AI system with database integration
+const dbManager = require('./database');
+const aiService = require('./ai_service');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -72,8 +76,21 @@ app.use(express.static('public', {
     maxAge: NODE_ENV === 'production' ? '1d' : '0'
 }));
 
-// Simple conversation memory (use database in production)
-const conversations = new Map();
+// Database initialization
+let databaseReady = false;
+
+// Initialize database connection on startup
+async function initializeDatabase() {
+    try {
+        await dbManager.initialize();
+        databaseReady = true;
+        console.log('✅ Enhanced AI system with database ready');
+    } catch (error) {
+        console.error('❌ Database initialization failed:', error.message);
+        console.log('⚠️ Falling back to basic AI responses without database features');
+        databaseReady = false;
+    }
+}
 
 // Health check for deployment platforms
 app.get('/health', (req, res) => {
@@ -96,8 +113,27 @@ app.post('/webhook/message', async (req, res) => {
             });
         }
 
-        // Get AI response
-        const aiResponse = await getAIResponse(message, from);
+        // Get enhanced AI response using RAG system
+        let aiResponse, aiMetadata = {};
+        
+        if (databaseReady) {
+            // Use enhanced AI with database integration
+            const conversationHistory = await dbManager.getConversationHistory(from, 10);
+            const enhancedResult = await aiService.getEnhancedResponse(message, from, conversationHistory);
+            
+            aiResponse = enhancedResult.response;
+            aiMetadata = {
+                intent: enhancedResult.intent,
+                knowledgeUsed: enhancedResult.knowledgeUsed,
+                responseTime: enhancedResult.responseTime,
+                model: enhancedResult.model
+            };
+            
+            console.log(`🤖 Enhanced AI Response - Intent: ${enhancedResult.intent}, Knowledge Used: ${enhancedResult.knowledgeUsed}, Model: ${enhancedResult.model}`);
+        } else {
+            // Fallback to basic AI response
+            aiResponse = await getBasicAIResponse(message, from);
+        }
         
         // Send response via n8n webhook if configured
         if (process.env.N8N_WEBHOOK_URL) {
@@ -112,7 +148,8 @@ app.post('/webhook/message', async (req, res) => {
             success: true,
             response: aiResponse,
             from: from,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            metadata: databaseReady ? aiMetadata : { model: 'basic', databaseEnabled: false }
         });
         
     } catch (error) {
@@ -224,27 +261,303 @@ app.post('/api/kwap/inquiry', async (req, res) => {
 });
 
 // Get conversation history
-app.get('/api/conversation/:phoneNumber', (req, res) => {
-    const { phoneNumber } = req.params;
-    const history = conversations.get(phoneNumber) || [];
-    res.json({ 
-        phoneNumber, 
-        history: history.slice(-20) // Last 20 messages
-    });
+app.get('/api/conversation/:phoneNumber', async (req, res) => {
+    try {
+        const { phoneNumber } = req.params;
+        
+        if (databaseReady) {
+            // Get history from database
+            const history = await dbManager.getConversationHistory(phoneNumber, 20);
+            const profile = await dbManager.getUserProfile(phoneNumber);
+            
+            res.json({ 
+                phoneNumber,
+                history: history,
+                profile: profile ? {
+                    name: profile.name,
+                    totalMessages: profile.total_messages,
+                    lastInteraction: profile.last_interaction
+                } : null,
+                databaseEnabled: true
+            });
+        } else {
+            // Fallback to empty history
+            res.json({ 
+                phoneNumber,
+                history: [],
+                profile: null,
+                databaseEnabled: false,
+                message: 'Database not available - conversation history not stored'
+            });
+        }
+    } catch (error) {
+        console.error('❌ Conversation history error:', error);
+        res.status(500).json({ 
+            error: 'Failed to retrieve conversation history',
+            details: error.message 
+        });
+    }
 });
 
-// AI Response Function
-async function getAIResponse(message, from) {
+// Knowledge Base Management API endpoints
+app.get('/api/admin/knowledge', async (req, res) => {
     try {
-        // Get conversation history
-        const history = conversations.get(from) || [];
+        if (!databaseReady) {
+            return res.status(503).json({ error: 'Database not available' });
+        }
         
-        // Add user message to history
-        history.push({
+        const { category, search, page = 1, limit = 20 } = req.query;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        
+        let sql = 'SELECT * FROM knowledge_base WHERE 1=1';
+        let params = [];
+        
+        if (category) {
+            sql += ' AND category = ?';
+            params.push(category);
+        }
+        
+        if (search) {
+            sql += ' AND (keywords LIKE ? OR question LIKE ? OR answer LIKE ?)';
+            const searchTerm = `%${search}%`;
+            params.push(searchTerm, searchTerm, searchTerm);
+        }
+        
+        sql += ' ORDER BY priority DESC, created_at DESC LIMIT ' + parseInt(limit) + ' OFFSET ' + offset;
+        // params.push(parseInt(limit), offset);
+        
+        const results = await dbManager.query(sql, params);
+        
+        // Get total count for pagination
+        let countSql = 'SELECT COUNT(*) as total FROM knowledge_base WHERE 1=1';
+        let countParams = [];
+        
+        if (category) {
+            countSql += ' AND category = ?';
+            countParams.push(category);
+        }
+        
+        if (search) {
+            countSql += ' AND (keywords LIKE ? OR question LIKE ? OR answer LIKE ?)';
+            const searchTerm = `%${search}%`;
+            countParams.push(searchTerm, searchTerm, searchTerm);
+        }
+        
+        const countResult = await dbManager.query(countSql, countParams);
+        const total = countResult[0].total;
+        
+        res.json({
+            success: true,
+            data: results,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total: total,
+                totalPages: Math.ceil(total / parseInt(limit))
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Knowledge base fetch error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch knowledge base',
+            details: error.message 
+        });
+    }
+});
+
+app.post('/api/admin/knowledge', async (req, res) => {
+    try {
+        if (!databaseReady) {
+            return res.status(503).json({ error: 'Database not available' });
+        }
+        
+        const { category, keywords, question, answer, priority = 1 } = req.body;
+        
+        if (!category || !keywords || !question || !answer) {
+            return res.status(400).json({ 
+                error: 'Missing required fields: category, keywords, question, answer' 
+            });
+        }
+        
+        const result = await dbManager.addKnowledge(category, keywords, question, answer, priority);
+        
+        res.json({
+            success: true,
+            id: result.insertId,
+            message: 'Knowledge base entry created successfully'
+        });
+        
+    } catch (error) {
+        console.error('❌ Knowledge base creation error:', error);
+        res.status(500).json({ 
+            error: 'Failed to create knowledge base entry',
+            details: error.message 
+        });
+    }
+});
+
+app.put('/api/admin/knowledge/:id', async (req, res) => {
+    try {
+        if (!databaseReady) {
+            return res.status(503).json({ error: 'Database not available' });
+        }
+        
+        const { id } = req.params;
+        const { category, keywords, question, answer, priority, is_active } = req.body;
+        
+        const sql = `
+            UPDATE knowledge_base 
+            SET category = ?, keywords = ?, question = ?, answer = ?, priority = ?, is_active = ?, updated_at = NOW()
+            WHERE id = ?
+        `;
+        
+        await dbManager.query(sql, [category, keywords, question, answer, priority, is_active, id]);
+        
+        res.json({
+            success: true,
+            message: 'Knowledge base entry updated successfully'
+        });
+        
+    } catch (error) {
+        console.error('❌ Knowledge base update error:', error);
+        res.status(500).json({ 
+            error: 'Failed to update knowledge base entry',
+            details: error.message 
+        });
+    }
+});
+
+app.delete('/api/admin/knowledge/:id', async (req, res) => {
+    try {
+        if (!databaseReady) {
+            return res.status(503).json({ error: 'Database not available' });
+        }
+        
+        const { id } = req.params;
+        
+        await dbManager.query('DELETE FROM knowledge_base WHERE id = ?', [id]);
+        
+        res.json({
+            success: true,
+            message: 'Knowledge base entry deleted successfully'
+        });
+        
+    } catch (error) {
+        console.error('❌ Knowledge base deletion error:', error);
+        res.status(500).json({ 
+            error: 'Failed to delete knowledge base entry',
+            details: error.message 
+        });
+    }
+});
+
+// Analytics API endpoints
+app.get('/api/admin/analytics', async (req, res) => {
+    try {
+        if (!databaseReady) {
+            return res.status(503).json({ error: 'Database not available' });
+        }
+        
+        const { startDate, endDate } = req.query;
+        
+        // Get various analytics metrics
+        const [responseTime, knowledgeHits, intents, totalConversations, totalUsers] = await Promise.all([
+            dbManager.getAnalytics('response_time', startDate, endDate),
+            dbManager.getAnalytics('knowledge_base_hits', startDate, endDate),
+            dbManager.getAnalytics('intent_detected', startDate, endDate),
+            dbManager.query(`
+                SELECT COUNT(*) as count 
+                FROM conversations 
+                WHERE created_at >= COALESCE(?, '1970-01-01') 
+                AND created_at <= COALESCE(?, NOW())
+            `, [startDate, endDate]),
+            dbManager.query(`
+                SELECT COUNT(DISTINCT phone_number) as count 
+                FROM conversations 
+                WHERE created_at >= COALESCE(?, '1970-01-01') 
+                AND created_at <= COALESCE(?, NOW())
+            `, [startDate, endDate])
+        ]);
+        
+        res.json({
+            success: true,
+            analytics: {
+                responseTime: responseTime || { avg_value: 0, count: 0 },
+                knowledgeHits: knowledgeHits || { avg_value: 0, count: 0 },
+                intents: intents || { avg_value: 0, count: 0 },
+                totalConversations: totalConversations[0].count,
+                totalUsers: totalUsers[0].count
+            },
+            period: { startDate, endDate }
+        });
+        
+    } catch (error) {
+        console.error('❌ Analytics fetch error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch analytics',
+            details: error.message 
+        });
+    }
+});
+
+// Database status endpoint
+app.get('/api/admin/database-status', async (req, res) => {
+    try {
+        const status = await dbManager.getConnectionStatus();
+        
+        res.json({
+            success: true,
+            database: {
+                connected: status.connected,
+                ready: databaseReady,
+                poolStats: status.pool_stats,
+                error: status.error
+            }
+        });
+        
+    } catch (error) {
+        res.status(500).json({ 
+            error: 'Failed to check database status',
+            details: error.message 
+        });
+    }
+});
+
+// User analytics endpoint
+app.get('/api/admin/users/:phoneNumber/analytics', async (req, res) => {
+    try {
+        if (!databaseReady) {
+            return res.status(503).json({ error: 'Database not available' });
+        }
+        
+        const { phoneNumber } = req.params;
+        const analytics = await aiService.getConversationAnalytics(phoneNumber);
+        
+        res.json({
+            success: true,
+            phoneNumber,
+            analytics
+        });
+        
+    } catch (error) {
+        console.error('❌ User analytics error:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch user analytics',
+            details: error.message 
+        });
+    }
+});
+
+// Basic AI Response Function (fallback when database is not available)
+async function getBasicAIResponse(message, from) {
+    try {
+        // Create minimal conversation context for this request only
+        const history = [{
             role: 'user',
             content: message,
             timestamp: new Date().toISOString()
-        });
+        }];
         
         // Prepare AI request based on configured service
         let aiResponse;
@@ -257,19 +570,6 @@ async function getAIResponse(message, from) {
             // Fallback: Simple rule-based responses
             aiResponse = getSimpleResponse(message);
         }
-        
-        // Add AI response to history
-        history.push({
-            role: 'assistant',
-            content: aiResponse,
-            timestamp: new Date().toISOString()
-        });
-        
-        // Store conversation (keep last 50 messages)
-        if (history.length > 50) {
-            history.splice(0, history.length - 50);
-        }
-        conversations.set(from, history);
         
         return aiResponse;
         
@@ -527,19 +827,39 @@ async function sendToN8N(data) {
     }
 }
 
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🤖 AI Chatbot running on port ${PORT}`);
-    console.log(`📡 Webhook: http://localhost:${PORT}/webhook/message`);
-    console.log(`🔍 Health: http://localhost:${PORT}/health`);
+// Start server with database initialization
+async function startServer() {
+    // Initialize database first
+    await initializeDatabase();
     
-    // Log configuration
-    console.log('\n📋 Configuration:');
-    console.log(`- OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
-    console.log(`- Gemini: ${process.env.GEMINI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
-    console.log(`- n8n Webhook: ${process.env.N8N_WEBHOOK_URL ? '✅ Configured' : '❌ Not configured'}`);
-    console.log(`- Fallback: ✅ Simple responses available`);
-});
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🤖 Enhanced AI Chatbot running on port ${PORT}`);
+        console.log(`📡 Webhook: http://localhost:${PORT}/webhook/message`);
+        console.log(`🔍 Health: http://localhost:${PORT}/health`);
+        console.log(`📊 Admin Panel: http://localhost:${PORT}/admin`);
+        
+        // Log configuration
+        console.log('\n📋 Configuration:');
+        console.log(`- Database: ${databaseReady ? '✅ Connected with RAG system' : '❌ Not available (using fallback)'}`);
+        console.log(`- OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
+        console.log(`- Gemini: ${process.env.GEMINI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
+        console.log(`- n8n Webhook: ${process.env.N8N_WEBHOOK_URL ? '✅ Configured' : '❌ Not configured'}`);
+        console.log(`- Fallback: ✅ Enhanced responses available`);
+        
+        if (databaseReady) {
+            console.log('\n🚀 Enhanced Features Enabled:');
+            console.log('- 📚 Knowledge Base with RAG');
+            console.log('- 🎯 Intent Detection');
+            console.log('- 👤 User Profiles & Personalization');
+            console.log('- 💾 Persistent Conversation Storage');
+            console.log('- 📊 Advanced Analytics');
+            console.log('- 🔧 Admin API Endpoints');
+        }
+    });
+}
+
+// Start the server
+startServer().catch(console.error);
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

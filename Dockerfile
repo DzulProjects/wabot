@@ -27,8 +27,8 @@ USER wabot
 # Expose port (use dynamic PORT from environment)
 EXPOSE ${PORT:-3000}
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+# Health check with database connectivity
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD node healthcheck.js || exit 1
 
 # Start application

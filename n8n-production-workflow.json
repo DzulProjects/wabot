@@ -1,0 +1,323 @@
+{
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "name": "Enhanced WABOT WhatsApp Integration - Production",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "whatsapp-enhanced",
+        "options": {}
+      },
+      "id": "webhook-receive",
+      "name": "WhatsApp Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "enhanced-wabot-webhook"
+    },
+    {
+      "parameters": {
+        "url": "https://your-wabot-domain.com/webhook/message",
+        "options": {
+          "timeout": 30000
+        },
+        "sendQuery": false,
+        "sendHeaders": false,
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{ $json.body.text }}"
+            },
+            {
+              "name": "from",
+              "value": "={{ $json.body.from }}"
+            },
+            {
+              "name": "to",
+              "value": "={{ $json.body.to }}"
+            },
+            {
+              "name": "messageId",
+              "value": "={{ $json.body.id }}"
+            },
+            {
+              "name": "timestamp",
+              "value": "={{ new Date().toISOString() }}"
+            }
+          ]
+        }
+      },
+      "id": "http-request-wabot",
+      "name": "Send to Enhanced WABOT",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "condition-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-success",
+      "name": "Check WABOT Response",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://app.wabot.my/api/send",
+        "options": {
+          "timeout": 15000
+        },
+        "sendQuery": false,
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "instance_id",
+              "value": "={{ $env.WABOT_INSTANCE_ID }}"
+            },
+            {
+              "name": "access_token",
+              "value": "={{ $env.WABOT_ACCESS_TOKEN }}"
+            },
+            {
+              "name": "to",
+              "value": "={{ $node['WhatsApp Webhook'].json.body.from }}"
+            },
+            {
+              "name": "type",
+              "value": "text"
+            },
+            {
+              "name": "message",
+              "value": "={{ $node['Send to Enhanced WABOT'].json.response }}"
+            }
+          ]
+        }
+      },
+      "id": "send-whatsapp-response",
+      "name": "Send WhatsApp Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "url": "https://your-wabot-domain.com/api/admin/analytics",
+        "options": {
+          "timeout": 10000
+        },
+        "sendQuery": false,
+        "sendHeaders": false,
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event",
+              "value": "message_processed"
+            },
+            {
+              "name": "from",
+              "value": "={{ $node['WhatsApp Webhook'].json.body.from }}"
+            },
+            {
+              "name": "intent",
+              "value": "={{ $node['Send to Enhanced WABOT'].json.metadata.intent }}"
+            },
+            {
+              "name": "knowledge_used",
+              "value": "={{ $node['Send to Enhanced WABOT'].json.metadata.knowledgeUsed }}"
+            },
+            {
+              "name": "response_time",
+              "value": "={{ $node['Send to Enhanced WABOT'].json.metadata.responseTime }}"
+            },
+            {
+              "name": "model",
+              "value": "={{ $node['Send to Enhanced WABOT'].json.metadata.model }}"
+            }
+          ]
+        }
+      },
+      "id": "log-analytics",
+      "name": "Log Analytics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 320]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.SLACK_WEBHOOK_URL || 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK' }}",
+        "options": {
+          "timeout": 5000
+        },
+        "sendQuery": false,
+        "sendHeaders": false,
+        "sendBody": true,
+        "contentType": "json",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "🚨 WABOT Error: Failed to process message from {{ $node['WhatsApp Webhook'].json.body.from }}"
+            },
+            {
+              "name": "attachments",
+              "value": [
+                {
+                  "color": "danger",
+                  "fields": [
+                    {
+                      "title": "Error Details",
+                      "value": "{{ $node['Send to Enhanced WABOT'].json.details || 'Unknown error' }}",
+                      "short": false
+                    },
+                    {
+                      "title": "Message",
+                      "value": "{{ $node['WhatsApp Webhook'].json.body.text }}",
+                      "short": true
+                    },
+                    {
+                      "title": "From",
+                      "value": "{{ $node['WhatsApp Webhook'].json.body.from }}",
+                      "short": true
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "id": "error-notification",
+      "name": "Error Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Enhanced WABOT Production Workflow\n// This node processes the webhook data and prepares it for the enhanced AI system\n\nconst webhookData = $input.first().json;\n\n// Extract message details\nconst messageData = {\n  body: webhookData.body || webhookData,\n  headers: webhookData.headers || {},\n  query: webhookData.query || {}\n};\n\n// Validate required fields\nif (!messageData.body.text || !messageData.body.from) {\n  throw new Error('Missing required fields: text or from');\n}\n\n// Add metadata for enhanced processing\nmessageData.body.enhanced = true;\nmessageData.body.workflow = 'production';\nmessageData.body.timestamp = new Date().toISOString();\n\n// Log incoming message for monitoring\nconsole.log('📨 Enhanced WABOT - Processing message:', {\n  from: messageData.body.from,\n  message: messageData.body.text,\n  timestamp: messageData.body.timestamp\n});\n\nreturn [messageData];"
+      },
+      "id": "process-webhook",
+      "name": "Process Webhook Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 180]
+    }
+  ],
+  "connections": {
+    "WhatsApp Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Webhook Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Webhook Data": {
+      "main": [
+        [
+          {
+            "node": "Send to Enhanced WABOT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to Enhanced WABOT": {
+      "main": [
+        [
+          {
+            "node": "Check WABOT Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check WABOT Response": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Response",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": {
+      "enabled": true
+    }
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "id": "enhanced-wabot",
+      "name": "Enhanced WABOT"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-01T00:00:00.000Z",
+  "versionId": "enhanced-production-v1"
+}
