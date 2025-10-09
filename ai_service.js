@@ -273,7 +273,7 @@ RESPONSE GUIDELINES:
         prompt += `User: ${originalMessage}\nAssistant:`;
 
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1/models/${process.env.GEMINI_MODEL || 'gemini-1.5-flash'}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-1.5-pro'}:generateContent?key=${process.env.GEMINI_API_KEY}`,
             {
                 contents: [{
                     parts: [{ text: prompt }]

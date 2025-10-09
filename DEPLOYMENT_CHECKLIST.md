@@ -26,7 +26,7 @@
    Version: 8.0
    Database: wabot_ai  
    Username: wabot
-   Password: [Generate secure password - save this!]
+   Password: [Generate secure password - save this!] VK1AYxnKHIxgEdsAjOuMdeLbZY9KBan2HTzzwvKPf7hH9ck6LEIluRbCZh2ZcH5Y
    Port: 3306
    Persistent Storage: Enable (10GB minimum)
    ```

@@ -611,7 +611,7 @@ async function getOpenAIResponse(history) {
 async function getGeminiResponse(history) {
     const prompt = history.map(h => `${h.role}: ${h.content}`).join('\n') + '\nassistant:';
     
-    const response = await axios.post(`https://generativelanguage.googleapis.com/v1/models/${process.env.GEMINI_MODEL || 'gemini-1.5-flash'}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+    const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-1.5-pro'}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
         contents: [{
             parts: [{
                 text: `You are a helpful AI assistant responding via WhatsApp. Keep responses concise and friendly.\n\n${prompt}`
