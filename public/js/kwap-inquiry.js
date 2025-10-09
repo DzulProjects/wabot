@@ -52,8 +52,8 @@
         const numericValue = value.replace(/\D/g, '');
         nokpInput.value = numericValue;
         
-        // Validate length and format
-        if (numericValue.length === 12) {
+        // Validate length and format (4-15 digits)
+        if (numericValue.length >= 4 && numericValue.length <= 15) {
             nokpInput.style.borderColor = '#00ff00';
             nokpInput.style.boxShadow = '0 0 20px rgba(0, 255, 0, 0.3)';
         } else if (numericValue.length > 0) {
@@ -76,13 +76,13 @@
             return;
         }
         
-        if (nokp.length !== 12) {
-            showError('IC number must be exactly 12 digits');
+        if (nokp.length < 4 || nokp.length > 15) {
+            showError('IC number must be between 4 and 15 digits');
             return;
         }
         
-        if (!/^\d{12}$/.test(nokp)) {
-            showError('IC number must contain only numbers');
+        if (!/^\d{4,15}$/.test(nokp)) {
+            showError('IC number must contain only numbers (4-15 digits)');
             return;
         }
         

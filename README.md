@@ -305,7 +305,7 @@ Integrated Malaysian pension inquiry system that connects directly to KWAP (Kump
 
 ### 🚀 Features
 
-- **🔍 IC Number Lookup**: Query using 12-digit Malaysian Identity Card numbers
+- **🔍 IC Number Lookup**: Query using Malaysian Identity Card numbers (4-15 digits)
 - **📄 Comprehensive Data**: Personal info, service history, pension details
 - **👨‍👩‍👧‍👦 Dependent Information**: Family members and beneficiaries
 - **⚡ Real-time**: Direct SOAP API integration with KWAP servers
@@ -365,7 +365,7 @@ KWAP_API_URL=https://apim.kwap.my/ws/PortalServiceInquireEmass/1.0
 - **Protocol**: SOAP 1.1 with XML parsing
 - **Authentication**: API key-based authorization
 - **Timeout**: 30-second request timeout
-- **Format**: 12-digit Malaysian IC numbers (e.g., 440725085195)
+- **Format**: Malaysian IC numbers (4-15 digits, e.g., 440725085195)
 - **Response**: Structured JSON with comprehensive pensioner data
 
 ## 🔄 How It Works

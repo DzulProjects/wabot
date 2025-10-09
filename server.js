@@ -192,10 +192,10 @@ app.post('/api/kwap/inquiry', async (req, res) => {
             });
         }
         
-        // Validate nokp format
-        if (!/^\d{12}$/.test(nokp)) {
+        // Validate nokp format (minimum 4 digits, maximum 15 digits)
+        if (!/^\d{4,15}$/.test(nokp)) {
             return res.status(400).json({ 
-                error: 'Invalid IC number format. Must be 12 digits.' 
+                error: 'Invalid IC number format. Must be between 4 and 15 digits.' 
             });
         }
         
