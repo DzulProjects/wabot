@@ -143,8 +143,8 @@ class DatabaseManager {
             if (category) {
                 // Search by category first
                 const categoryResults = await this.query(
-                    'SELECT id, category, question, answer, priority FROM knowledge_base WHERE is_active = TRUE AND category = ? ORDER BY priority DESC LIMIT ?',
-                    [category, parseInt(limit)]
+                    `SELECT id, category, question, answer, priority FROM knowledge_base WHERE is_active = TRUE AND category = ? ORDER BY priority DESC LIMIT ${parseInt(limit)}`,
+                    [category]
                 );
                 results = categoryResults || [];
             }
@@ -153,8 +153,8 @@ class DatabaseManager {
             if (results.length === 0 && query) {
                 const searchTerm = `%${query.toLowerCase()}%`;
                 const keywordResults = await this.query(
-                    'SELECT id, category, question, answer, priority FROM knowledge_base WHERE is_active = TRUE AND (LOWER(keywords) LIKE ? OR LOWER(question) LIKE ?) ORDER BY priority DESC LIMIT ?',
-                    [searchTerm, searchTerm, parseInt(limit)]
+                    `SELECT id, category, question, answer, priority FROM knowledge_base WHERE is_active = TRUE AND (LOWER(keywords) LIKE ? OR LOWER(question) LIKE ?) ORDER BY priority DESC LIMIT ${parseInt(limit)}`,
+                    [searchTerm, searchTerm]
                 );
                 results = keywordResults || [];
             }
@@ -166,9 +166,9 @@ class DatabaseManager {
             // Fallback: return all entries for the category or top entries
             try {
                 if (category) {
-                    return await this.query('SELECT id, category, question, answer, priority FROM knowledge_base WHERE category = ? LIMIT ?', [category, parseInt(limit)]);
+                    return await this.query(`SELECT id, category, question, answer, priority FROM knowledge_base WHERE category = ? LIMIT ${parseInt(limit)}`, [category]);
                 } else {
-                    return await this.query('SELECT id, category, question, answer, priority FROM knowledge_base LIMIT ?', [parseInt(limit)]);
+                    return await this.query(`SELECT id, category, question, answer, priority FROM knowledge_base LIMIT ${parseInt(limit)}`);
                 }
             } catch (fallbackError) {
                 console.error('❌ Fallback search error:', fallbackError.message);
