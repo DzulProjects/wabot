@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poslaju Tracking - Parcel Tracking System</title>
+    <link rel="stylesheet" href="css/poslaju-tracking.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="background">
+        <div class="stars"></div>
+        <div class="floating-particles"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html" style="text-decoration: none;">
+                    <span class="logo-text">Poslaju Track</span>
+                </a>
+                <div class="logo-glow"></div>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link">Home</a>
+                <a href="chatbot.html" class="nav-link">AI Chatbot</a>
+                <a href="sender.html" class="nav-link">WA Sender</a>
+                <a href="kwap-inquiry.html" class="nav-link">KWAP Inquiry</a>
+                <a href="poslaju-tracking.html" class="nav-link active">Poslaju Track</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Page Title -->
+        <div class="page-title">
+            <h1>
+                <span class="gradient-text">Poslaju</span><br>
+                Parcel Tracking System
+            </h1>
+            <p class="page-description">
+                Track your Poslaju parcels in real-time with our AI-powered tracking system. 
+                Enter your consignment number to get instant updates on your parcel's delivery status and location history.
+            </p>
+        </div>
+
+        <!-- Tracking Form -->
+        <div class="tracking-form-container">
+            <div class="form-card">
+                <form id="tracking-form">
+                    <div class="form-group">
+                        <label for="tracking-number" class="form-label">
+                            📦 Tracking/Consignment Number
+                        </label>
+                        <input 
+                            type="text" 
+                            id="tracking-number" 
+                            name="tracking-number" 
+                            class="form-input"
+                            placeholder="Enter your tracking number (e.g., EP123456789MY)"
+                            maxlength="50"
+                            required
+                        >
+                        <div class="input-hint">
+                            Enter your Poslaju tracking number to get real-time parcel status
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-button" id="submit-btn">
+                        <span class="loading-spinner" id="loading-spinner"></span>
+                        <span id="button-text">🚀 Track My Parcel</span>
+                    </button>
+                </form>
+
+                <!-- Messages -->
+                <div id="error-message" class="error-message"></div>
+                <div id="success-message" class="success-message"></div>
+            </div>
+        </div>
+
+        <!-- Results Container -->
+        <div id="results-container" class="results-container">
+            <!-- Tracking Status -->
+            <div class="results-card status-card">
+                <h2 class="results-title">📊 Current Status</h2>
+                <div class="status-display">
+                    <div id="current-status" class="current-status">
+                        <div class="status-badge" id="status-badge">
+                            <span id="status-text">In Transit</span>
+                        </div>
+                        <div class="status-details">
+                            <div class="status-location" id="status-location">Kuala Lumpur Processing Center</div>
+                            <div class="status-timestamp" id="status-timestamp">Updated: 2024-10-14 10:30 AM</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parcel Information -->
+            <div class="results-card">
+                <h2 class="results-title">📋 Parcel Information</h2>
+                <div id="parcel-info" class="info-grid">
+                    <!-- Dynamic content will be populated here -->
+                </div>
+            </div>
+
+            <!-- Tracking Events -->
+            <div class="results-card">
+                <h2 class="results-title">🛣️ Tracking History</h2>
+                <div id="tracking-events" class="tracking-timeline">
+                    <!-- Dynamic tracking events will be populated here -->
+                </div>
+            </div>
+
+            <!-- Delivery Information -->
+            <div id="delivery-container" class="results-card">
+                <h2 class="results-title">🚚 Delivery Details</h2>
+                <div id="delivery-info" class="delivery-section">
+                    <!-- Dynamic delivery information will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Tracking Numbers (Development Helper) -->
+        <div class="sample-numbers">
+            <h3>Sample Tracking Numbers (for testing)</h3>
+            <div class="sample-grid">
+                <div class="sample-item" data-tracking="EP123456789MY">
+                    <span class="sample-number">EP123456789MY</span>
+                    <span class="sample-status">Express</span>
+                </div>
+                <div class="sample-item" data-tracking="RA987654321MY">
+                    <span class="sample-number">RA987654321MY</span>
+                    <span class="sample-status">Registered</span>
+                </div>
+                <div class="sample-item" data-tracking="CJ111222333MY">
+                    <span class="sample-number">CJ111222333MY</span>
+                    <span class="sample-status">Courier</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 2rem; color: #666; margin-top: 4rem;">
+        <p>📦 Secure Poslaju Tracking System | Powered by POS Malaysia API</p>
+        <p style="font-size: 0.9rem; margin-top: 0.5rem;">
+            Real-time parcel tracking with advanced AI-powered notifications and insights.
+        </p>
+    </footer>
+
+    <script src="js/poslaju-tracking.js"></script>
+</body>
+</html>

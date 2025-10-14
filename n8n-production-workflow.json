@@ -18,7 +18,7 @@
     },
     {
       "parameters": {
-        "url": "https://your-wabot-domain.com/webhook/message",
+        "url": "={{ $env.WABOT_WEBHOOK_URL || 'http://localhost:3000/webhook/message' }}",
         "options": {
           "timeout": 30000
         },

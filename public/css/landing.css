@@ -328,11 +328,11 @@ body {
 
 .features-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 3rem;
-    align-items: start;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
 }
-
 /* Feature Cards */
 .feature-card {
     position: relative;
@@ -500,6 +500,29 @@ body {
 @keyframes tech-scan {
     0% { transform: translate(-50px, -50px) rotate(0deg); }
     100% { transform: translate(-50px, -50px) rotate(360deg); }
+}
+
+/* Poslaju Card Specific Styling */
+.poslaju-card {
+    background: linear-gradient(135deg, rgba(255, 149, 0, 0.1), rgba(0, 255, 255, 0.1));
+    border: 1px solid rgba(255, 149, 0, 0.2);
+}
+
+.poslaju-card:hover {
+    border-color: rgba(255, 149, 0, 0.4);
+    box-shadow: 0 25px 50px rgba(255, 149, 0, 0.2);
+}
+
+.poslaju-card .card-glow {
+    background: linear-gradient(45deg, #ff9500, #00ffff);
+}
+
+.poslaju-card .card-button {
+    background: linear-gradient(45deg, #ff9500, #ff7b00);
+}
+
+.poslaju-card .card-button:hover {
+    box-shadow: 0 10px 30px rgba(255, 149, 0, 0.4);
 }
 
 /* Status Section */

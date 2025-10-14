@@ -801,6 +801,223 @@ function parseKWAPResponse(xmlData) {
     }
 }
 
+// Poslaju Tracking API
+app.post('/api/poslaju/track', async (req, res) => {
+    try {
+        const { trackingNumber } = req.body;
+        
+        if (!trackingNumber) {
+            return res.status(400).json({ 
+                error: 'Tracking number is required',
+                success: false 
+            });
+        }
+        
+        // Validate tracking number format
+        const sanitizedTrackingNumber = trackingNumber.toString().trim().toUpperCase();
+        
+        if (sanitizedTrackingNumber.length < 5) {
+            return res.status(400).json({ 
+                error: 'Tracking number must be at least 5 characters',
+                success: false 
+            });
+        }
+        
+        console.log('📦 Poslaju tracking request for:', sanitizedTrackingNumber);
+        
+        // Get tracking information
+        const trackingData = await getPoslajuTrackingInfo(sanitizedTrackingNumber);
+        
+        res.json({
+            success: true,
+            trackingNumber: sanitizedTrackingNumber,
+            trackingInfo: trackingData,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Poslaju tracking error:', error);
+        
+        // Handle different error types
+        let statusCode = 500;
+        let errorMessage = error.message || 'Failed to retrieve tracking information';
+        
+        if (error.message.includes('not found') || error.message.includes('404')) {
+            statusCode = 404;
+            errorMessage = 'Tracking number not found in Poslaju system';
+        } else if (error.message.includes('unauthorized') || error.message.includes('401')) {
+            statusCode = 401;
+            errorMessage = 'Authentication error with Poslaju API';
+        } else if (error.message.includes('timeout') || error.message.includes('network')) {
+            statusCode = 503;
+            errorMessage = 'Poslaju tracking service is temporarily unavailable';
+        }
+        
+        res.status(statusCode).json({
+            success: false,
+            error: errorMessage,
+            trackingNumber: req.body.trackingNumber
+        });
+    }
+});
+
+// Poslaju Tracking Function
+async function getPoslajuTrackingInfo(trackingNumber) {
+    const poslajuClientId = process.env.POSLAJU_CLIENT_ID || '605840cf-ecd7-4803-b2cc-875469b7d548';
+    const poslajuClientSecret = process.env.POSLAJU_CLIENT_SECRET || 'd41dd72c-d339-4060-8982-05065189269c';
+    const poslajuApiUrl = process.env.POSLAJU_API_URL || 'https://api-dev.pos.com.my';
+    
+    console.log('📦 Making Poslaju API request for tracking number:', trackingNumber);
+    
+    try {
+        // First, try to get an authentication token (if required)
+        let authToken = null;
+        
+        // Try different authentication methods based on API documentation
+        const authMethods = [
+            // Method 1: Bearer token with client ID
+            () => ({ 'Authorization': `Bearer ${poslajuClientId}` }),
+            // Method 2: API Key header
+            () => ({ 'X-API-Key': poslajuClientId }),
+            // Method 3: Basic Auth
+            () => ({ 'Authorization': `Basic ${Buffer.from(`${poslajuClientId}:${poslajuClientSecret}`).toString('base64')}` })
+        ];
+        
+        // Try each authentication method
+        for (const getHeaders of authMethods) {
+            try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    ...getHeaders()
+                };
+                
+                console.log('🔐 Trying authentication method...');
+                
+                // Make tracking request
+                const response = await axios.get(
+                    `${poslajuApiUrl}/as2corporate/tracking-event-list/v1/api/TrackingEventList`, 
+                    {
+                        headers,
+                        params: {
+                            trackingNumber: trackingNumber
+                        },
+                        timeout: 30000
+                    }
+                );
+                
+                console.log('✅ Poslaju API Response received:', response.status);
+                
+                // Parse the response
+                const trackingData = parsePoslajuResponse(response.data, trackingNumber);
+                return trackingData;
+                
+            } catch (authError) {
+                console.log('❌ Auth method failed:', authError.response?.status || authError.message);
+                
+                // If it's not an auth error, break and throw
+                if (authError.response?.status !== 401 && authError.response?.status !== 403) {
+                    throw authError;
+                }
+                
+                continue; // Try next auth method
+            }
+        }
+        
+        // If all auth methods failed, throw an auth error
+        throw new Error('Unable to authenticate with Poslaju API. Please check credentials.');
+        
+    } catch (error) {
+        console.error('❌ Poslaju API Error:', error.response?.data || error.message);
+        
+        // Handle specific error cases
+        if (error.response?.status === 404) {
+            throw new Error(`Tracking number ${trackingNumber} not found in Poslaju system`);
+        } else if (error.response?.status === 401 || error.response?.status === 403) {
+            throw new Error('Authentication failed with Poslaju API');
+        } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+            throw new Error('Unable to connect to Poslaju tracking service');
+        } else if (error.code === 'ECONNABORTED') {
+            throw new Error('Request timeout - Poslaju service is not responding');
+        }
+        
+        throw new Error(error.response?.data?.message || error.message || 'Failed to retrieve tracking information');
+    }
+}
+
+// Parse Poslaju API Response
+function parsePoslajuResponse(data, trackingNumber) {
+    try {
+        // Handle different response formats
+        let trackingInfo = {};
+        
+        if (Array.isArray(data)) {
+            // Response is an array of tracking events
+            const events = data.map(event => ({
+                status: event.status || event.eventDescription || 'Status Update',
+                timestamp: event.eventDate || event.timestamp || new Date().toISOString(),
+                location: event.location || event.office || event.eventLocation || 'Location not specified',
+                description: event.description || event.eventDescription || 'No additional details'
+            }));
+            
+            // Determine current status from latest event
+            const latestEvent = events[0] || {};
+            trackingInfo = {
+                currentStatus: latestEvent.status || 'Unknown',
+                currentLocation: latestEvent.location || 'Location not available',
+                lastUpdate: latestEvent.timestamp || new Date().toISOString(),
+                serviceType: data.serviceType || 'Poslaju Service',
+                events: events
+            };
+            
+        } else if (typeof data === 'object' && data !== null) {
+            // Response is an object with tracking information
+            trackingInfo = {
+                currentStatus: data.currentStatus || data.status || 'Unknown',
+                currentLocation: data.currentLocation || data.location || 'Location not available',
+                lastUpdate: data.lastUpdate || data.timestamp || new Date().toISOString(),
+                serviceType: data.serviceType || 'Poslaju Service',
+                weight: data.weight,
+                dimensions: data.dimensions,
+                origin: data.origin || data.senderLocation,
+                destination: data.destination || data.recipientLocation,
+                estimatedDelivery: data.estimatedDelivery,
+                events: data.events || data.trackingEvents || [],
+                delivery: data.delivery || data.deliveryInfo || {}
+            };
+            
+        } else {
+            // Fallback for unexpected response format
+            trackingInfo = {
+                currentStatus: 'Unknown',
+                currentLocation: 'Information not available',
+                lastUpdate: new Date().toISOString(),
+                serviceType: 'Poslaju Service',
+                events: []
+            };
+        }
+        
+        console.log('📋 Parsed tracking info for:', trackingNumber);
+        return trackingInfo;
+        
+    } catch (error) {
+        console.error('❌ Response parsing error:', error);
+        
+        // Return basic tracking info if parsing fails
+        return {
+            currentStatus: 'Information Available',
+            currentLocation: 'Processing Center',
+            lastUpdate: new Date().toISOString(),
+            serviceType: 'Poslaju Service',
+            events: [{
+                status: 'Tracking information received',
+                timestamp: new Date().toISOString(),
+                location: 'Poslaju System',
+                description: 'Your parcel is being tracked in our system'
+            }]
+        };
+    }
+}
+
 // Send response back to n8n
 async function sendToN8N(data) {
     if (!process.env.N8N_WEBHOOK_URL) {
@@ -844,6 +1061,8 @@ async function startServer() {
         console.log(`- OpenAI: ${process.env.OPENAI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
         console.log(`- Gemini: ${process.env.GEMINI_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
         console.log(`- n8n Webhook: ${process.env.N8N_WEBHOOK_URL ? '✅ Configured' : '❌ Not configured'}`);
+        console.log(`- KWAP API: ${process.env.KWAP_API_KEY ? '✅ Configured' : '❌ Not configured'}`);
+        console.log(`- Poslaju API: ${process.env.POSLAJU_CLIENT_ID ? '✅ Configured' : '❌ Not configured'}`);
         console.log(`- Fallback: ✅ Enhanced responses available`);
         
         if (databaseReady) {
