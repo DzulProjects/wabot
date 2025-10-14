@@ -825,13 +825,48 @@ app.post('/api/poslaju/track', async (req, res) => {
         
         console.log('📦 Poslaju tracking request for:', sanitizedTrackingNumber);
         
-        // Get tracking information
+        // Get tracking information from API
         const trackingData = await getPoslajuTrackingInfo(sanitizedTrackingNumber);
+        
+        // Enhance with database webhook data if available
+        if (databaseReady && dbManager) {
+            try {
+                const webhookEvents = await dbManager.getTrackingEvents(sanitizedTrackingNumber, 20);
+                if (webhookEvents && webhookEvents.length > 0) {
+                    // Convert database events to tracking events format
+                    const dbEvents = webhookEvents.map(event => ({
+                        status: event.status,
+                        timestamp: event.timestamp,
+                        location: event.location,
+                        description: event.description || 'Webhook update received'
+                    }));
+                    
+                    // Merge API events with database events and sort by timestamp
+                    const allEvents = [...(trackingData.events || []), ...dbEvents]
+                        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                    
+                    trackingData.events = allEvents;
+                    
+                    // Update current status with latest database event if more recent
+                    if (webhookEvents[0] && new Date(webhookEvents[0].timestamp) > new Date(trackingData.lastUpdate || 0)) {
+                        trackingData.currentStatus = webhookEvents[0].status;
+                        trackingData.currentLocation = webhookEvents[0].location || trackingData.currentLocation;
+                        trackingData.lastUpdate = webhookEvents[0].timestamp;
+                    }
+                    
+                    console.log(`✅ Enhanced tracking data with ${webhookEvents.length} webhook events`);
+                }
+            } catch (dbError) {
+                console.warn('⚠️ Could not load webhook data:', dbError.message);
+                // Continue with API data only
+            }
+        }
         
         res.json({
             success: true,
             trackingNumber: sanitizedTrackingNumber,
             trackingInfo: trackingData,
+            webhookEventsIncluded: databaseReady ? true : false,
             timestamp: new Date().toISOString()
         });
         
@@ -860,6 +895,128 @@ app.post('/api/poslaju/track', async (req, res) => {
         });
     }
 });
+
+// Poslaju Webhook Endpoint for Real-time Updates
+app.post('/api/poslaju/webhook', async (req, res) => {
+    try {
+        console.log('📦 Poslaju webhook received:', JSON.stringify(req.body, null, 2));
+        
+        // Validate webhook signature if provided by Poslaju
+        // const signature = req.headers['x-poslaju-signature'];
+        // if (!validateWebhookSignature(req.body, signature)) {
+        //     return res.status(401).json({ error: 'Invalid webhook signature' });
+        // }
+        
+        const webhookData = req.body;
+        
+        // Extract tracking information from webhook
+        const trackingNumber = webhookData.trackingNumber || webhookData.consignmentNumber;
+        const status = webhookData.status || webhookData.eventType;
+        const location = webhookData.location || webhookData.currentLocation;
+        const timestamp = webhookData.timestamp || webhookData.eventTime || new Date().toISOString();
+        const description = webhookData.description || webhookData.eventDescription;
+        
+        if (!trackingNumber) {
+            return res.status(400).json({ error: 'Missing tracking number in webhook data' });
+        }
+        
+        console.log(`📦 Processing webhook for tracking: ${trackingNumber}, status: ${status}`);
+        
+        // Process the webhook data
+        await processPoslajuWebhook({
+            trackingNumber,
+            status,
+            location,
+            timestamp,
+            description,
+            rawData: webhookData
+        });
+        
+        // Send WhatsApp notification if configured
+        if (process.env.N8N_WEBHOOK_URL) {
+            await sendPoslajuNotification({
+                trackingNumber,
+                status,
+                location,
+                timestamp,
+                description
+            });
+        }
+        
+        // Respond to Poslaju that webhook was received successfully
+        res.json({
+            success: true,
+            message: 'Webhook processed successfully',
+            trackingNumber,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Poslaju webhook error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to process webhook',
+            details: error.message
+        });
+    }
+});
+
+// Process Poslaju Webhook Data
+async function processPoslajuWebhook(webhookData) {
+    try {
+        const { trackingNumber, status, location, timestamp, description, rawData } = webhookData;
+        
+        // Store webhook data in database if available
+        if (databaseReady && dbManager) {
+            await dbManager.saveTrackingEvent(
+                trackingNumber, 
+                status, 
+                location, 
+                timestamp, 
+                description, 
+                rawData
+            );
+        }
+        
+        console.log(`✅ Stored webhook data for tracking: ${trackingNumber}`);
+        
+    } catch (error) {
+        console.error('❌ Error processing webhook:', error);
+        throw error;
+    }
+}
+
+// Send WhatsApp Notification via n8n
+async function sendPoslajuNotification(trackingData) {
+    try {
+        const { trackingNumber, status, location, description } = trackingData;
+        
+        // Create notification message
+        const message = `📦 *Poslaju Update*\n\n` +
+            `Tracking: ${trackingNumber}\n` +
+            `Status: ${status}\n` +
+            `Location: ${location}\n` +
+            `Update: ${description}\n\n` +
+            `Track your parcel: https://yourdomain.com/poslaju-tracking.html`;
+        
+        // Send to n8n for WhatsApp delivery
+        const notificationData = {
+            type: 'poslaju_update',
+            trackingNumber,
+            status,
+            location,
+            message,
+            timestamp: new Date().toISOString()
+        };
+        
+        await sendToN8N(notificationData);
+        
+        console.log(`📤 Sent Poslaju notification for: ${trackingNumber}`);
+        
+    } catch (error) {
+        console.error('❌ Failed to send notification:', error);
+    }
+}
 
 // Poslaju Tracking Function
 async function getPoslajuTrackingInfo(trackingNumber) {

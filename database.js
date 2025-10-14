@@ -111,6 +111,25 @@ class DatabaseManager {
                     INDEX idx_recorded (recorded_at)
                 )
             `);
+            
+            // Create Poslaju tracking events table for webhook data
+            await this.query(`
+                CREATE TABLE IF NOT EXISTS poslaju_tracking_events (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    tracking_number VARCHAR(50) NOT NULL,
+                    status VARCHAR(100) NOT NULL,
+                    location VARCHAR(255),
+                    timestamp DATETIME NOT NULL,
+                    description TEXT,
+                    webhook_data JSON,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_tracking_number (tracking_number),
+                    INDEX idx_timestamp (timestamp),
+                    INDEX idx_status (status),
+                    UNIQUE KEY unique_tracking_event (tracking_number, timestamp, status)
+                )
+            `);
 
             console.log('✅ Database schema initialized successfully');
 
@@ -299,6 +318,44 @@ class DatabaseManager {
     }
 
     // Utility Methods
+    // Poslaju Tracking Events
+    async getTrackingEvents(trackingNumber, limit = 10) {
+        try {
+            const sql = `
+                SELECT tracking_number, status, location, timestamp, description, webhook_data, created_at
+                FROM poslaju_tracking_events 
+                WHERE tracking_number = ?
+                ORDER BY timestamp DESC
+                LIMIT ${parseInt(limit)}
+            `;
+            const results = await this.query(sql, [trackingNumber]);
+            return results || [];
+        } catch (error) {
+            console.error('❌ Tracking events error:', error.message);
+            return [];
+        }
+    }
+    
+    async saveTrackingEvent(trackingNumber, status, location, timestamp, description, webhookData) {
+        try {
+            const sql = `
+                INSERT INTO poslaju_tracking_events 
+                (tracking_number, status, location, timestamp, description, webhook_data)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                status = VALUES(status),
+                location = VALUES(location),
+                description = VALUES(description),
+                webhook_data = VALUES(webhook_data),
+                updated_at = NOW()
+            `;
+            return await this.query(sql, [trackingNumber, status, location, timestamp, description, JSON.stringify(webhookData)]);
+        } catch (error) {
+            console.error('❌ Save tracking event error:', error.message);
+            throw error;
+        }
+    }
+
     async getConnectionStatus() {
         try {
             if (!this.pool) return { connected: false, error: 'Pool not initialized' };
